@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import request from '@/utils/request'
+import { login } from '@/api/user'
 export default {
   name: 'LoginIndex',
   components: {},
@@ -60,6 +60,7 @@ export default {
         // 表单验证规则配置
         // 要验证的数据名称：规则列表[]
         mobile: [
+          // trigger 用来配置触发校验的时机，有两个选项，change 是当输入的内容发生变化的时候，blur 是当失去焦点的时候
           { required: true, message: '手机号不能为空', trigger: 'change' },
           { pattern: /^1[3|5|7|9]\d{9}$/, message: '请输入正确的号码格式', trigger: 'change' }
         ],
@@ -72,6 +73,7 @@ export default {
             // 自定义校验规则
             // 验证通过：callback()
             // 验证失败：callback(new Error('错误消息'))
+            // validator 验证函数不是我们调用的，是当 element 表单触发验证的时候它会自己内部调用，故只需提供校验函数处理逻辑就可以了
             validator: (rule, value, callback) => {
               if (value) {
                 callback()
@@ -79,7 +81,7 @@ export default {
                 callback(new Error('请同意用户协议'))
               }
             },
-            trigger: 'change'
+            trigger: 'blur'
           }
         ]
       }
@@ -111,12 +113,12 @@ export default {
     login () {
     // 开启登陆中 loading
       this.loginLoading = true
-      request({
-        method: 'post',
-        url: '/mp/v1_0/authorizations',
-        // data用来设置POST请求体
-        data: this.user
-      }).then(res => {
+      // 对于代码中的请求操作
+      // 1.接口请求可能需要重用
+      // 2.实际工作中，接口非常容易变动，改起来麻烦
+      // 我们建议的做法是把所有的请求都封装成函数然后统一组织到模块中进行管理
+      // 这样做的好处是：管理维护方便，好重用
+      login(this.user).then(res => {
         console.log(res)
         // 登录成功
         this.$message({
@@ -125,11 +127,25 @@ export default {
         })
         // 关闭 loading
         this.loginLoading = false
+        // 将接口返回的用户数据放到本地存储，方便应用数据共享
+        // 本地存储只能存储字符串
+        // 如果需要存储对象、数组类型的数据，则把他们转为 JSON 格式字符串进行存储
+        window.localStorage.setItem('user', JSON.stringify(res.data.data))
+        // 跳转到首页
+        // this.$router.push('/')
+
+        this.$router.push({
+          name: 'Home'
+        })
       }).catch(err => {
         console.log('登陆失败', err)
         this.$message.error('登录失败，手机号或验证码错误')
         // 关闭loading
         this.loginLoading = false
+        // 在这里登录失败也跳转进新页面，因为可能账号密码不能用了，无法显示登录成功界面
+        this.$router.push({
+          name: 'Home'
+        })
       })
     }
   }
