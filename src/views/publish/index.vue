@@ -156,7 +156,7 @@ export default {
           { required: true, message: '请输入文章内容', trigger: 'blur' }
         ],
         channel_id: [
-          { required: true, message: '请选择频道' }
+          { required: true, message: '请选择文章频道' }
         ]
       }
     }
